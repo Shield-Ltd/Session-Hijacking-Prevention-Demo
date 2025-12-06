@@ -1,66 +1,71 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import * as jose from 'jose';
+import { NextRequest, NextResponse } from 'next/server';
+import { jwtVerify } from 'jose';
 
-const SECRET_KEY = process.env.JWT_SECRET || "your-secret-key";
-
-const PUBLIC_PATHS = ['/login', '/signup'];
-const LISTENER_PATHS = ['/dashboard'];
-const ALL_PROTECTED_PATHS = [...LISTENER_PATHS];
+const PUBLIC_ROUTES = ['/login', '/signup', '/'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const token = request.cookies.get("authToken")?.value;
-
-  const isPublicPath = PUBLIC_PATHS.includes(pathname);
-  const isListenerPath = LISTENER_PATHS.includes(pathname);
-  const isProtectedPath = ALL_PROTECTED_PATHS.includes(pathname);
-
-  // Check for CORS preflight OPTIONS requests and handle them
-  if (request.method === 'OPTIONS') {
-    return new NextResponse(null, {
-      status: 204,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Max-Age': '86400',
-      },
-    });
+  
+  if (pathname.startsWith('/api/')) {
+    return NextResponse.next();
   }
 
-  if (isPublicPath) {
-    if (!token) {
-      console.log("Public path, no token - allowing access");
-      return NextResponse.next();
+  const authToken = request.cookies.get('authToken')?.value;
+  
+  const isPublicRoute = PUBLIC_ROUTES.some(route => 
+    pathname === route || pathname.startsWith(route + '/')
+  );
+  
+  // Handle public routes
+  if (isPublicRoute) {
+    // If user is authenticated and tries to access login/signup, redirect to dashboard
+    if ((pathname === '/login' || pathname === '/signup') && authToken) {
+      try {
+        const secretKey = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key");
+        await jwtVerify(authToken, secretKey);
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+      } catch {
+        // Token is invalid, allow access to login page
+        return NextResponse.next();
+      }
     }
-    
-    // If token exists on public path, verify and redirect if valid
-    try {
-      const secretKey = new TextEncoder().encode(SECRET_KEY);
-      const { payload } = await jose.jwtVerify(token, secretKey);
-
-      console.log(`Public path with valid token - redirecting to /dashboard`);
-      return NextResponse.redirect('/dashboard');
-    } catch (error) {
-      console.error("Token validation error on public path:", error);
-      // Invalid token on public path, clear it and allow access
-      const response = NextResponse.next();
-      console.log(response)
-      //response.cookies.delete("authToken");
-      return response;
-    }
+    return NextResponse.next();
   }
   
-    if (!token) {
-      return NextResponse.redirect(new URL("/login", request.url));
-    }
+  // If we reach here, it's a protected route (like /dashboard)
+  
+  // Check if user has a token
+  if (!authToken) {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('redirect', pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+  
+  // Verify the token
+  try {
+    const secretKey = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key");
+    await jwtVerify(authToken, secretKey);
+    
+    // Token is valid, allow access
+    return NextResponse.next();
+    
+  } catch (error) {
+    console.error('Token verification failed:', error);
+    
+    // Token is invalid, redirect to login
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('redirect', pathname);
+    
+    // Clear the invalid token
+    const response = NextResponse.redirect(loginUrl);
+    response.cookies.delete('authToken');
+    
+    return response;
+  }
 }
 
 export const config = {
   matcher: [
-    '/login',
-    '/signup',
-    '/dashboard'
+    '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 };
