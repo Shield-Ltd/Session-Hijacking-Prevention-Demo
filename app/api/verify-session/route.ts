@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createHash } from 'crypto';
 import { db } from "@/lib/db"
-import * as jose from 'jose'
+
 
 export async function POST(request: NextRequest) {
   try {
