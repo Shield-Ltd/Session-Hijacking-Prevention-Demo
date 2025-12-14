@@ -3,11 +3,12 @@ import { useState } from "react"
 import type React from "react"
 
 import Link from "next/link"
-import { Music, Loader2, ArrowRight, Mail, User, Lock } from "lucide-react"
+import { Loader2, ArrowRight, Mail, User, Lock } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import GlassSurface from "@/components/ui/GlassSurface"
+import Squares from "@/components/ui/Squares"
 
 import { ErrorAlert } from "@/components/ErrorAlert";
 
@@ -63,6 +64,16 @@ export default function SignupPage() {
         }),
       })
 
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        console.error("Non-JSON response:", text);
+        setError("Server error: Please check your database connection and environment variables")
+        setIsAlertOpen(true)
+        setIsLoading(false)
+        return
+      }
+
       const data = await response.json()
 
       if (!response.ok) {
@@ -82,143 +93,141 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-background via-background/95 to-background/90 flex flex-col">
-      <div className="absolute top-8 left-8">
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="bg-primary/10 p-2 rounded-full group-hover:bg-primary/20 transition-colors">
-            <Music className="h-6 w-6 text-primary" />
-          </div>
-          <span className="text-xl font-bold bg-clip-text text-transparent bg-linear-to-r from-primary to-primary/70">
-            SoundWave
-          </span>
-        </Link>
+    <div className="min-h-screen w-full h-full bg-black text-white">
+      <div className="absolute inset-0 z-0">
+        <Squares />
       </div>
-      
-      <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
-        <div className="w-full max-w-md">
-          <div className="relative bg-card/30 backdrop-blur-sm border border-border/50 rounded-2xl p-8 shadow-xl">
-            <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-primary/10 p-4 rounded-full border border-primary/20">
-              <Music className="h-8 w-8 text-primary" />
+      <div className="relative z-10 flex flex-col min-h-screen">
+        <header className="px-4 md:px-6 h-14 flex items-center">
+          <Link href="/" className="flex items-center justify-center" prefetch={false}>
+            <span className="text-lg font-medium">Session Hijacking</span>
+          </Link>
+        </header>
+        
+        <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
+          <div className="w-full max-w-md space-y-6">
+            <div className="space-y-2 text-center">
+              <h1 className="text-3xl font-bold tracking-tight text-white">Create an account</h1>
+              <p className="text-gray-400">Enter your information to get started</p>
             </div>
             
-            <div className="space-y-6 pt-6">
-              <div className="space-y-2 text-center">
-                <h1 className="text-3xl font-bold tracking-tight">Create an account</h1>
-                <p className="text-muted-foreground">Enter your information to get started</p>
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="space-y-3">
+                <Label htmlFor="name" className="text-sm font-medium text-white">Full Name</Label>
+                <div className="relative">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    <User className="h-5 w-5" />
+                  </div>
+                  <Input
+                    id="name"
+                    name="name"
+                    placeholder="John Doe"
+                    value={formData.name}
+                    onChange={handleChange}
+                    required
+                    disabled={isLoading}
+                    className="pl-11 pr-4 py-6 bg-white/10 border-white/20 text-white placeholder:text-gray-400 rounded-xl"
+                  />
+                </div>
               </div>
               
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div className="space-y-3">
-                  <Label htmlFor="name" className="text-sm font-medium">Full Name</Label>
-                  <div className="relative">
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                      <User className="h-5 w-5" />
-                    </div>
-                    <Input
-                      id="name"
-                      name="name"
-                      placeholder="John Doe"
-                      value={formData.name}
-                      onChange={handleChange}
-                      required
-                      disabled={isLoading}
-                      className="pl-11 pr-4 py-6 bg-background/50 border-border/50 rounded-xl"
-                    />
+              <div className="space-y-3">
+                <Label htmlFor="email" className="text-sm font-medium text-white">Email</Label>
+                <div className="relative">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    <Mail className="h-5 w-5" />
                   </div>
+                  <Input
+                    id="email"
+                    name="email"
+                    placeholder="name@example.com"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    required
+                    disabled={isLoading}
+                    className="pl-11 pr-4 py-6 bg-white/10 border-white/20 text-white placeholder:text-gray-400 rounded-xl"
+                  />
                 </div>
-                
-                <div className="space-y-3">
-                  <Label htmlFor="email" className="text-sm font-medium">Email</Label>
-                  <div className="relative">
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                      <Mail className="h-5 w-5" />
-                    </div>
-                    <Input
-                      id="email"
-                      name="email"
-                      placeholder="name@example.com"
-                      type="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      required
-                      disabled={isLoading}
-                      className="pl-11 pr-4 py-6 bg-background/50 border-border/50 rounded-xl"
-                    />
+              </div>
+              
+              <div className="space-y-3">
+                <Label htmlFor="password" className="text-sm font-medium text-white">Password</Label>
+                <div className="relative">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    <Lock className="h-5 w-5" />
                   </div>
+                  <Input
+                    id="password"
+                    name="password"
+                    placeholder="password"
+                    type="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    required
+                    disabled={isLoading}
+                    className="pl-11 pr-4 py-6 bg-white/10 border-white/20 text-white placeholder:text-gray-400 rounded-xl"
+                  />
                 </div>
-                
-                <div className="space-y-3">
-                  <Label htmlFor="password" className="text-sm font-medium">Password</Label>
-                  <div className="relative">
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                      <Lock className="h-5 w-5" />
-                    </div>
-                    <Input
-                      id="password"
-                      name="password"
-                      type="password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      required
-                      disabled={isLoading}
-                      className="pl-11 pr-4 py-6 bg-background/50 border-border/50 rounded-xl"
-                    />
+              </div>
+              
+              <div className="space-y-3">
+                <Label htmlFor="confirm-password" className="text-sm font-medium text-white">Confirm Password</Label>
+                <div className="relative">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    <Lock className="h-5 w-5" />
                   </div>
+                  <Input
+                    id="confirm-password"
+                    name="confirmPassword"
+                    type="password"
+                    placeholder="confirm password"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    required
+                    disabled={isLoading}
+                    className="pl-11 pr-4 py-6 bg-white/10 border-white/20 text-white placeholder:text-gray-400 rounded-xl"
+                  />
                 </div>
-                
-                <div className="space-y-3">
-                  <Label htmlFor="confirm-password" className="text-sm font-medium">Confirm Password</Label>
-                  <div className="relative">
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                      <Lock className="h-5 w-5" />
-                    </div>
-                    <Input
-                      id="confirm-password"
-                      name="confirmPassword"
-                      type="password"
-                      value={formData.confirmPassword}
-                      onChange={handleChange}
-                      required
-                      disabled={isLoading}
-                      className="pl-11 pr-4 py-6 bg-background/50 border-border/50 rounded-xl"
-                    />
-                  </div>
-                </div>
-                
-                <Button 
-                  type="submit" 
-                  className="w-full py-6 rounded-xl text-base font-medium"
+              </div>
+              
+              <div className="flex justify-center">
+                <GlassSurface
+                  as="button"
+                  type="submit"
+                  className="w-full text-white flex items-center justify-center gap-2"
                   disabled={isLoading}
+                  borderRadius={10}
                 >
                   {isLoading ? (
                     <>
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      <Loader2 className="h-5 w-5 animate-spin" />
                       Creating account...
                     </>
                   ) : (
                     <>
                       Create account
-                      <ArrowRight className="ml-2 h-5 w-5" />
+                      <ArrowRight className="h-5 w-5" />
                     </>
                   )}
-                </Button>
-                
-                <div className="text-center text-sm">
-                  Already have an account?{" "}
-                  <Link href="/login" className="text-primary hover:text-primary/80 transition-colors font-medium">
-                    Sign in
-                  </Link>
-                </div>
-              </form>
-            </div>
+                </GlassSurface>
+              </div>
+              
+              <div className="text-center text-sm text-gray-400">
+                Already have an account?{" "}
+                <Link href="/login" className="text-white hover:text-gray-300 transition-colors font-medium">
+                  Sign in
+                </Link>
+              </div>
+            </form>
           </div>
         </div>
+        <ErrorAlert
+          error={error}
+          isOpen={isAlertOpen}
+          onClose={() => setIsAlertOpen(false)}
+        />
       </div>
-      <ErrorAlert
-        error={error}
-        isOpen={isAlertOpen}
-        onClose={() => setIsAlertOpen(false)}
-      />
     </div>
   )
 }

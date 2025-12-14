@@ -4,6 +4,13 @@ import bcrypt from "bcryptjs"
 
 export async function POST(request: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json(
+        { error: "Database connection not configured. Please check your DATABASE_URL environment variable." },
+        { status: 500 }
+      );
+    }
+
     const { name, email, password } = await request.json()
 
     // Validate input

@@ -6,6 +6,13 @@ import * as jose from 'jose'
 
 export async function POST(request: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json(
+        { error: "Database connection not configured. Please check your DATABASE_URL environment variable." },
+        { status: 500 }
+      );
+    }
+
     const { email, password, fingerprint } = await request.json()
 
     // Validate input
