@@ -11,7 +11,7 @@ const fpPromise = FingerprintJS.load();
 
 export default function Dashboard(){
     const [loading, setLoading] = useState(true);
-    const [user, setUser] = useState<{email: string} | null>(null);
+    const [user, setUser] = useState<{email: string; name?: string} | null>(null);
     const [showProfileMenu, setShowProfileMenu] = useState(false);
     const router = useRouter();
     useEffect(() => {
@@ -60,9 +60,29 @@ export default function Dashboard(){
             return;
         }
 
-        // Session is valid
-        setUser(data.user);
-        setLoading(false);
+                // Session is valid — fetch full user details from /api/user
+                try {
+                    const userResp = await fetch('/api/user', {
+                        method: 'GET',
+                        credentials: 'include',
+                    })
+
+                    if (!userResp.ok) {
+                        console.error('Failed to fetch user details', await userResp.text())
+                        router.push('/login')
+                        return
+                    }
+
+                    const userData = await userResp.json()
+                    // Expect { user: { id, name, email } }
+                    setUser({ email: userData.user.email, name: userData.user.name })
+                } catch (err) {
+                    console.error('Error fetching user details:', err)
+                    router.push('/login')
+                    return
+                } finally {
+                    setLoading(false)
+                }
         
         } catch (error) {
             console.error('Session verification error:', error);
@@ -123,7 +143,7 @@ export default function Dashboard(){
                                 className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/30 rounded-lg text-white font-medium transition-all"
                             >
                                 <User className="h-5 w-5" />
-                                <span className="hidden sm:inline">{user.email.split('@')[0]}</span>
+                                <span className="hidden sm:inline">{user.name ? user.name : user.email.split('@')[0]}</span>
                             </button>
                             {showProfileMenu && (
                                 <>
