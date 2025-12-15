@@ -34,7 +34,7 @@ export default function Dashboard(){
             'Content-Type': 'application/json',
             },
             body: JSON.stringify({ fingerprint: visitorId }),
-            credentials: 'include', // Important: sends cookies
+            credentials: 'include',
         });
 
         const contentType = response.headers.get("content-type");

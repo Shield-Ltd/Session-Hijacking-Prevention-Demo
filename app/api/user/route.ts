@@ -4,10 +4,6 @@ import * as jose from 'jose'
 
 export async function GET(request: NextRequest) {
   try {
-    if (!db) {
-      return NextResponse.json({ error: "Database connection not configured." }, { status: 500 })
-    }
-
     const authToken = request.cookies.get("authToken")?.value
     if (!authToken) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -17,14 +13,14 @@ export async function GET(request: NextRequest) {
     try {
       const secretKey = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key")
       const { payload } = await jose.jwtVerify(authToken, secretKey)
-      const userId = (payload as any).sub
+      const userId = (payload as any).id
 
       if (!userId) {
         return NextResponse.json({ error: "Invalid token payload" }, { status: 401 })
       }
 
       const users = await db`
-        SELECT id, name, email FROM users WHERE id = ${userId}
+        SELECT name, email FROM users WHERE id = ${userId}
       `
 
       if (users.length === 0) {
