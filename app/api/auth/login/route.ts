@@ -4,6 +4,8 @@ import { redis } from "@/lib/redis";
 import * as jose from 'jose';
 import { verifyPassword, hashToken, generateUUID, generateNonce } from '@/lib/crypto';
 
+import { addSession } from "anti-session-hijack";
+
 export async function POST(request: NextRequest) {
   try {  
     const { email, password, fingerprint } = await request.json();
@@ -50,38 +52,29 @@ export async function POST(request: NextRequest) {
 
   // Hash the token for storage
   const authTokenHash = hashToken(token);
-  const sessionUUID = generateUUID();
 
-  // Store session
-  await db`
-    INSERT INTO sessions (id, user_id, auth_token_hash, fingerprint)
-    VALUES (${sessionUUID}, ${user.id}, ${authTokenHash}, ${fingerprint})
-    ON CONFLICT (user_id, fingerprint) 
-    DO UPDATE SET 
-      auth_token_hash = EXCLUDED.auth_token_hash,
-      created_at = NOW()
-  `;
+  // Storing Session in Redis
+  await addSession(authTokenHash, fingerprint, redis);
 
-    // Prepare response
-    const response = NextResponse.json({
-      message: "Login successful",
-    }, { status: 200 });
+  const response = NextResponse.json({
+    message: "Login successful",
+  }, { status: 200 });
 
-    if (!response){
-      console.error("Response not found");
-      return
-    }
+  if (!response){
+    console.error("Response not found");
+    return
+  }
 
-    // Set cookie
-    response.cookies.set("authToken", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60, // 7 days
-      path: '/'
-    });
+  // Set cookie
+  response.cookies.set("authToken", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 7 * 24 * 60 * 60, // 7 days
+    path: '/'
+  });
 
-    return response;
+  return response;
 
   } catch (error: any) {
     console.error("Login error:", error);

@@ -1,31 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { redis } from "@/lib/redis";
 import { verifySession } from "anti-session-hijack";
+import { hashToken } from "@/lib/crypto";
 
 export async function POST(request: NextRequest) {
   try {
     const { fingerprint } = await request.json();
     const authToken = request.cookies.get("authToken")?.value;
     if (!authToken) {
-      return NextResponse.json(
-        { valid: false },
-        { status: 401 }
-      );
+      throw new Error("AuthToken not found")
     }
-
-    // Create options
-    const options = {
-      jwtSecret: process.env.JWT_SECRET || "your-secret-key",
-      jwtExpiry: "7d"
-    };
+    const authTokenHash = hashToken(authToken)
 
     // Verify session
-    const result = await verifySession(
-      { authToken },
-      db,
-      fingerprint,
-      options
-    );
+    const result = await verifySession(authTokenHash, fingerprint, redis);
 
     return NextResponse.json(result);
 
