@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { signup } from "anti-session-hijack";
+import { generateUUID, hashPassword } from '@/lib/crypto';
 import { db } from "@/lib/db";
 
 export async function POST(request: NextRequest) {
@@ -17,15 +17,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Name, email, and password are required" }, { status: 400 });
     }
 
-    const result = await signup(
-      { name, email, password },
-      db,
-    );
+    // Check if user exists
+    const existingUsers = await db`
+      SELECT id FROM users WHERE email = ${email}
+    `;
+
+    if (existingUsers.length > 0) {
+      throw new Error('User with this email already exists');
+    }
+
+    // Hash password
+    const passwordHash = await hashPassword(password);
+    
+    // Generate UUID for user
+    const userId = generateUUID();
+
+    // Create user
+    await db`
+      INSERT INTO users (id, name, email, password_hash)
+      VALUES (${userId}, ${name}, ${email}, ${passwordHash})
+    `;
 
     return NextResponse.json(
       {
         message: "User created successfully",
-        user: result,
       },
       { status: 201 }
     );

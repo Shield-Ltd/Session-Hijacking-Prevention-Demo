@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { login } from "anti-session-hijack";
+import { redis } from "@/lib/redis";
+import * as jose from 'jose';
+import { verifyPassword, hashToken, generateUUID, generateNonce } from '@/lib/crypto';
 
 export async function POST(request: NextRequest) {
   try {  
@@ -14,22 +16,55 @@ export async function POST(request: NextRequest) {
     // Create options
     const options = {
       jwtSecret: process.env.JWT_SECRET || "your-secret-key",
-      jwtExpiry: "7d"
     };
 
 
-    const result = await login(
-      { email, password },
-      db,
-      fingerprint,
-      options,
-    );
+    const users = await db`
+    SELECT id, name, email, password_hash FROM users WHERE email = ${email}
+  `;
+
+  if (users.length === 0) {
+    throw new Error('Invalid email or password');
+  }
+
+  const user = users[0];
+
+  // Verify password
+  const isPasswordValid = await verifyPassword(password, user.password_hash);
+  if (!isPasswordValid) {
+    throw new Error('Invalid email or password');
+  }
+
+  // Generate JWT token
+  const secretKey = new TextEncoder().encode(options.jwtSecret);
+  const nonce = generateNonce();
+
+  const token = await new jose.SignJWT({
+    id: user.id,
+    email: user.email,
+    nonce,
+  })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setExpirationTime('7d')
+    .sign(secretKey);
+
+  // Hash the token for storage
+  const authTokenHash = hashToken(token);
+  const sessionUUID = generateUUID();
+
+  // Store session
+  await db`
+    INSERT INTO sessions (id, user_id, auth_token_hash, fingerprint)
+    VALUES (${sessionUUID}, ${user.id}, ${authTokenHash}, ${fingerprint})
+    ON CONFLICT (user_id, fingerprint) 
+    DO UPDATE SET 
+      auth_token_hash = EXCLUDED.auth_token_hash,
+      created_at = NOW()
+  `;
 
     // Prepare response
     const response = NextResponse.json({
       message: "Login successful",
-      user: result.user,
-      token: result.token
     }, { status: 200 });
 
     if (!response){
@@ -38,7 +73,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Set cookie
-    response.cookies.set("authToken", result.token, {
+    response.cookies.set("authToken", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
