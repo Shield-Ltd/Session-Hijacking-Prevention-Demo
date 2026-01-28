@@ -48,7 +48,7 @@ export default function Home() {
             <Link href="/terms" className="text-xs hover:underline underline-offset-4" > 
               Terms of Service
             </Link>
-            <Link href="#" className="text-xs hover:underline underline-offset-4" prefetch={false}>
+            <Link href="/privacy" className="text-xs hover:underline underline-offset-4" prefetch={false}>
               Privacy
             </Link>
           </nav>

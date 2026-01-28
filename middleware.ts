@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 
-const PUBLIC_ROUTES = ['/login', '/signup', '/','/terms'];
+const PUBLIC_ROUTES = ['/login', '/signup', '/','/terms','/privacy'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
