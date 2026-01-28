@@ -45,7 +45,7 @@ export default function Home() {
             © 2026 Session Hijacking. All rights reserved.
           </p>
           <nav className="sm:ml-auto flex gap-4 sm:gap-6">
-            <Link href="#" className="text-xs hover:underline underline-offset-4" prefetch={false}>
+            <Link href="/terms" className="text-xs hover:underline underline-offset-4" > 
               Terms of Service
             </Link>
             <Link href="#" className="text-xs hover:underline underline-offset-4" prefetch={false}>
