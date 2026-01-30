@@ -9,7 +9,7 @@ interface GridOffset {
 }
 
 interface SquaresProps {
-  direction?: 'diagonal' | 'up' | 'right' | 'down' | 'left';
+  direction?: 'diagonal' | 'up' | 'right' | 'down' | 'left'; // Kept for compatibility, but ignored now
   speed?: number;
   borderColor?: CanvasStrokeStyle;
   squareSize?: number;
@@ -17,18 +17,19 @@ interface SquaresProps {
 }
 
 const Squares: React.FC<SquaresProps> = ({
-  direction = 'diagonal',
-  speed = 0.3,
+  direction = 'diagonal', // Ignored in new logic
+  speed = 1.5, // Increased default speed for faster movement
   borderColor = 'grey',
   squareSize = 40,
   hoverFillColor = '#000000ff'
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const requestRef = useRef<number | null>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null); // Changed to interval
   const numSquaresX = useRef<number>(0);
   const numSquaresY = useRef<number>(0);
   const gridOffset = useRef<GridOffset>({ x: 0, y: 0 });
   const hoveredSquareRef = useRef<GridOffset | null>(null);
+  const mousePos = useRef<GridOffset>({ x: 0, y: 0 }); // Will be set to center on resize
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -40,6 +41,8 @@ const Squares: React.FC<SquaresProps> = ({
       canvas.height = canvas.offsetHeight;
       numSquaresX.current = Math.ceil(canvas.width / squareSize) + 1;
       numSquaresY.current = Math.ceil(canvas.height / squareSize) + 1;
+      // Initialize mouse position to center to prevent initial movement
+      mousePos.current = { x: canvas.width / 2, y: canvas.height / 2 };
     };
 
     window.addEventListener('resize', resizeCanvas);
@@ -88,36 +91,35 @@ const Squares: React.FC<SquaresProps> = ({
     };
 
     const updateAnimation = () => {
-      const effectiveSpeed = Math.max(speed, 0.1);
-      switch (direction) {
-        case 'right':
-          gridOffset.current.x = (gridOffset.current.x - effectiveSpeed + squareSize) % squareSize;
-          break;
-        case 'left':
-          gridOffset.current.x = (gridOffset.current.x + effectiveSpeed + squareSize) % squareSize;
-          break;
-        case 'up':
-          gridOffset.current.y = (gridOffset.current.y + effectiveSpeed + squareSize) % squareSize;
-          break;
-        case 'down':
-          gridOffset.current.y = (gridOffset.current.y - effectiveSpeed + squareSize) % squareSize;
-          break;
-        case 'diagonal':
-          gridOffset.current.x = (gridOffset.current.x - effectiveSpeed + squareSize) % squareSize;
-          gridOffset.current.y = (gridOffset.current.y - effectiveSpeed + squareSize) % squareSize;
-          break;
-        default:
-          break;
+      const effectiveSpeed = Math.max(speed, 0.5);
+      
+      // Calculate direction from center to mouse
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const dx = mousePos.current.x - centerX;
+      const dy = mousePos.current.y - centerY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      if (distance > 1) { // Small threshold to avoid jitter at center
+        const dirX = dx / distance;
+        const dirY = dy / distance;
+        
+        // Move grid offset towards the mouse (squares move towards mouse)
+        gridOffset.current.x = (gridOffset.current.x - dirX * effectiveSpeed + squareSize) % squareSize;
+        gridOffset.current.y = (gridOffset.current.y - dirY * effectiveSpeed + squareSize) % squareSize;
       }
+      // If distance <= 1 (near center), no movement
 
       drawGrid();
-      requestRef.current = requestAnimationFrame(updateAnimation);
     };
 
     const handleMouseMove = (event: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
       const mouseX = event.clientX - rect.left;
       const mouseY = event.clientY - rect.top;
+
+      // Update mouse position
+      mousePos.current = { x: mouseX, y: mouseY };
 
       const startX = Math.floor(gridOffset.current.x / squareSize) * squareSize;
       const startY = Math.floor(gridOffset.current.y / squareSize) * squareSize;
@@ -136,19 +138,21 @@ const Squares: React.FC<SquaresProps> = ({
 
     const handleMouseLeave = () => {
       hoveredSquareRef.current = null;
+      // Removed: mousePos reset to center – now keeps last position for continuous movement
     };
 
-    canvas.addEventListener('mousemove', handleMouseMove);
-    canvas.addEventListener('mouseleave', handleMouseLeave);
-    requestRef.current = requestAnimationFrame(updateAnimation);
+    // Attach listeners to document to capture mouse across the entire page
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseleave', handleMouseLeave);
+    intervalRef.current = setInterval(updateAnimation, 16); // ~60 FPS, runs even when tab is inactive
 
     return () => {
       window.removeEventListener('resize', resizeCanvas);
-      if (requestRef.current) cancelAnimationFrame(requestRef.current);
-      canvas.removeEventListener('mousemove', handleMouseMove);
-      canvas.removeEventListener('mouseleave', handleMouseLeave);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseleave', handleMouseLeave);
     };
-  }, [direction, speed, borderColor, hoverFillColor, squareSize]);
+  }, [direction, speed, borderColor, hoverFillColor, squareSize]); // direction is still in deps but ignored
 
   return <canvas ref={canvasRef} className="w-full h-full border-none block"></canvas>;
 };
