@@ -54,7 +54,6 @@ export async function middleware(request: NextRequest) {
     
     // Token is invalid, redirect to login
     const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirect', pathname);
     
     // Clear the invalid token
     const response = NextResponse.redirect(loginUrl);
@@ -66,6 +65,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|favicon).*)',
   ],
 };
