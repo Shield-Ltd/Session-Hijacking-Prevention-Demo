@@ -7,7 +7,21 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "SHIELD Demo",
   description: "Secure session hijacking protection system",
+  icons: {
+    icon: [
+      {
+        url: "/favicon-dark.ico",
+        media: "(prefers-color-scheme: light)",
+      },
+      {
+        url: "/favicon-light.ico",
+        media: "(prefers-color-scheme: dark)",
+      },
+    ],
+  },
 };
+
+
 
 export default function RootLayout({
   children,
