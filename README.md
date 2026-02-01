@@ -4,7 +4,7 @@ A lightweight, scalable security solution to prevent **session hijacking and ses
 
 ---
 
-## 📌 Overview
+## Overview
 
 Session hijacking is a serious web security vulnerability where an attacker steals a valid session ID and reuses it to impersonate a legitimate user. Traditional protections such as cookie flags, IP checks, and token expiration are often ineffective once a session identifier is compromised.
 
@@ -14,7 +14,7 @@ The solution is implemented as a **reusable npm package**, enabling developers t
 
 ---
 
-## 🎯 Objectives
+## Objectives
 
 - Prevent session hijacking and session replay attacks
 - Bind sessions to browser-specific fingerprints
@@ -24,7 +24,7 @@ The solution is implemented as a **reusable npm package**, enabling developers t
 
 ---
 
-## 🏗️ System Architecture
+## System Architecture
 
 ### High-Level Flow
 
@@ -41,7 +41,7 @@ The solution is implemented as a **reusable npm package**, enabling developers t
 
 ---
 
-## ⚙️ Technologies Used
+## Technologies Used
 
 - **Programming Language:** JavaScript (ES2022)
 - **Runtime Environment:** Node.js (v18+)
@@ -52,7 +52,7 @@ The solution is implemented as a **reusable npm package**, enabling developers t
 
 ---
 
-## 🔐 Browser Fingerprint Components
+## Browser Fingerprint Components
 
 The fingerprint uses **non-sensitive and stable browser attributes**, including:
 
@@ -66,7 +66,7 @@ No personal or privacy-sensitive data is collected.
 
 ---
 
-## ✨ Key Features
+## Key Features
 
 - Device-bound session validation
 - Automatic session invalidation on mismatch
@@ -75,7 +75,5 @@ No personal or privacy-sensitive data is collected.
 - Plug-and-play npm package
 - Scalable and cloud-ready design
 
----
 
-## 📦 Usage (High-Level)
 
