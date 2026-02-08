@@ -49,22 +49,21 @@ export default function Dashboard(){
 
         if (!response.ok || !data.valid) {
             if (data.hijacked) {
-                // stop loading UI, notify user, clear cookie and redirect to login
                 setLoading(false);
-                alert('⚠️ Security Alert: Session hijacking detected! You have been logged out for security reasons.');
+                alert("Security Alert: Session hijacking detected! You have been logged out for security reasons.");
                 document.cookie = "authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-                router.push('/login');
-                // fallback in case client router doesn't navigate
-                setTimeout(() => (window.location.href = '/login'), 150);
+
+                router.push("/login");
+                setTimeout(() => (window.location.href = "/login"), 150);
                 return;
             }
 
-            // Other authentication errors: ensure loading is turned off before redirecting
             setLoading(false);
-            router.push('/login');
-            setTimeout(() => (window.location.href = '/login'), 150);
+            router.push("/login");
+            setTimeout(() => (window.location.href = "/login"), 150);
             return;
         }
+
 
                 // Session is valid — fetch full user details from /api/user
                 try {
