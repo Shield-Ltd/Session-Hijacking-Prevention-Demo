@@ -104,11 +104,11 @@ export default function AttackerPage() {
                           </td>
                           <td className="py-2 px-3 text-sm align-top w-1/4 truncate">
                             <button
-                              onClick={() => handleCopy(s.session_id || s.id, s.id, 'value')}
+                              onClick={() => handleCopy(s.session_id,  s.id, 'value')}
                               className="text-red-100 hover:underline truncate"
-                              title={s.session_id || s.id}
+                              title={s.session_id || "—"}
                             >
-                              {s.session_id || s.id}
+                              {s.session_id || "—"}
                             </button>
                             {copied?.id === s.id && copied.field === 'value' && (
                               <span className="ml-2 text-xs text-red-100">Copied</span>
