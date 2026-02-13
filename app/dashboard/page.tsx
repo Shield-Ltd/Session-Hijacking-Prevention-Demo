@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import FingerprintJS from "@fingerprintjs/fingerprintjs";
 import Squares from "@/components/ui/Squares";
+import { ErrorAlert } from "@/components/ErrorAlert";
 import { LoadingScreen } from "./_components/LoadingScreen";
 import { DashboardHeader } from "./_components/DashboardHeader";
 import { DashboardContent } from "./_components/DashboardContent";
@@ -18,7 +19,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<UserState>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [securityBanner, setSecurityBanner] = useState<string | null>(null);
+  const [securityError, setSecurityError] = useState<string | null>(null);
+  const [isSecurityAlertOpen, setIsSecurityAlertOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -57,15 +59,14 @@ export default function Dashboard() {
 
       if (!response.ok || !data.valid) {
         if (data.hijacked) {
-          setLoading(false);
-          setSecurityBanner(
-            "Session hijacking detected. Your session has been terminated for your security."
-          );
+          // Terminate session and show a security alert modal
           document.cookie =
             "authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-
-          router.push("/login");
-          setTimeout(() => (window.location.href = "/login"), 150);
+          setLoading(false);
+          setSecurityError(
+            "Security Alert: Session hijacking detected! You have been logged out for security reasons."
+          );
+          setIsSecurityAlertOpen(true);
           return;
         }
 
@@ -123,6 +124,12 @@ export default function Dashboard() {
     }
   };
 
+  const handleSecurityAlertClose = () => {
+    setIsSecurityAlertOpen(false);
+    router.push("/login");
+    setTimeout(() => (window.location.href = "/login"), 150);
+  };
+
   if (loading) {
     return <LoadingScreen />;
   }
@@ -140,7 +147,13 @@ export default function Dashboard() {
           onCloseProfileMenu={() => setShowProfileMenu(false)}
           onLogout={handleLogout}
         />
-        <DashboardContent securityMessage={securityBanner} />
+        <DashboardContent />
+        <ErrorAlert
+          error={securityError}
+          isOpen={isSecurityAlertOpen}
+          onClose={handleSecurityAlertClose}
+          title="Security Alert"
+        />
       </div>
     </div>
   );

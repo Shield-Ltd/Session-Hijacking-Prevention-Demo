@@ -1,19 +1,7 @@
-type DashboardContentProps = {
-  securityMessage?: string | null;
-};
-
-export function DashboardContent({ securityMessage }: DashboardContentProps) {
+export function DashboardContent() {
   return (
     <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
       <div className="w-full max-w-2xl space-y-6">
-        {securityMessage && (
-          <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl shadow-lg">
-            <p className="text-xs font-semibold uppercase tracking-wide text-red-300 mb-1">
-              Security Alert
-            </p>
-            <p className="text-sm text-gray-200">{securityMessage}</p>
-          </div>
-        )}
         <div className="space-y-2 text-center">
           <h1 className="text-3xl font-bold tracking-tight text-white">
             Welcome to your secure session
