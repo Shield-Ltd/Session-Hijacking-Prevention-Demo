@@ -18,6 +18,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<UserState>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [securityBanner, setSecurityBanner] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -57,8 +58,8 @@ export default function Dashboard() {
       if (!response.ok || !data.valid) {
         if (data.hijacked) {
           setLoading(false);
-          alert(
-            "Security Alert: Session hijacking detected! You have been logged out for security reasons."
+          setSecurityBanner(
+            "Session hijacking detected. Your session has been terminated for your security."
           );
           document.cookie =
             "authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
@@ -139,7 +140,7 @@ export default function Dashboard() {
           onCloseProfileMenu={() => setShowProfileMenu(false)}
           onLogout={handleLogout}
         />
-        <DashboardContent />
+        <DashboardContent securityMessage={securityBanner} />
       </div>
     </div>
   );
