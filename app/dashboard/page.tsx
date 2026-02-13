@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import FingerprintJS from "@fingerprintjs/fingerprintjs";
 import Squares from "@/components/ui/Squares";
-import { ErrorAlert } from "@/components/ErrorAlert";
 import { LoadingScreen } from "./_components/LoadingScreen";
 import { DashboardHeader } from "./_components/DashboardHeader";
 import { DashboardContent } from "./_components/DashboardContent";
@@ -19,8 +18,6 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<UserState>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [securityError, setSecurityError] = useState<string | null>(null);
-  const [isSecurityAlertOpen, setIsSecurityAlertOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -59,14 +56,15 @@ export default function Dashboard() {
 
       if (!response.ok || !data.valid) {
         if (data.hijacked) {
-          // Terminate session and show a security alert modal
-          document.cookie =
-            "authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
           setLoading(false);
-          setSecurityError(
+          alert(
             "Security Alert: Session hijacking detected! You have been logged out for security reasons."
           );
-          setIsSecurityAlertOpen(true);
+          document.cookie =
+            "authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+
+          router.push("/login");
+          setTimeout(() => (window.location.href = "/login"), 150);
           return;
         }
 
@@ -124,17 +122,9 @@ export default function Dashboard() {
     }
   };
 
-  const handleSecurityAlertClose = () => {
-    setIsSecurityAlertOpen(false);
-    router.push("/login");
-    setTimeout(() => (window.location.href = "/login"), 150);
-  };
-
   if (loading) {
     return <LoadingScreen />;
   }
-
-  // Show the dashboard and render any security alert as a popup/modal
 
   return (
     <div className="min-h-screen w-full h-full bg-black text-white">
@@ -150,14 +140,6 @@ export default function Dashboard() {
           onLogout={handleLogout}
         />
         <DashboardContent />
-        {securityError && (
-          <ErrorAlert
-            error={securityError}
-            isOpen={isSecurityAlertOpen}
-            onClose={handleSecurityAlertClose}
-            title="Security Alert"
-          />
-        )}
       </div>
     </div>
   );
