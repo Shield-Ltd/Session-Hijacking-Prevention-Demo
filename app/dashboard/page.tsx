@@ -134,6 +134,24 @@ export default function Dashboard() {
     return <LoadingScreen />;
   }
 
+  if (securityError) {
+    return (
+      <div className="min-h-screen w-full h-full bg-black text-white">
+        <div className="absolute inset-0 z-0">
+          <Squares />
+        </div>
+        <div className="relative z-10 flex flex-col min-h-screen items-center justify-center">
+          <ErrorAlert
+            error={securityError}
+            isOpen={isSecurityAlertOpen}
+            onClose={handleSecurityAlertClose}
+            title="Security Alert"
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen w-full h-full bg-black text-white">
       <div className="absolute inset-0 z-0">
@@ -148,12 +166,6 @@ export default function Dashboard() {
           onLogout={handleLogout}
         />
         <DashboardContent />
-        <ErrorAlert
-          error={securityError}
-          isOpen={isSecurityAlertOpen}
-          onClose={handleSecurityAlertClose}
-          title="Security Alert"
-        />
       </div>
     </div>
   );
