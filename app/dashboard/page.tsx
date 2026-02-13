@@ -134,23 +134,7 @@ export default function Dashboard() {
     return <LoadingScreen />;
   }
 
-  if (securityError) {
-    return (
-      <div className="min-h-screen w-full h-full bg-black text-white">
-        <div className="absolute inset-0 z-0">
-          <Squares />
-        </div>
-        <div className="relative z-10 flex flex-col min-h-screen items-center justify-center">
-          <ErrorAlert
-            error={securityError}
-            isOpen={isSecurityAlertOpen}
-            onClose={handleSecurityAlertClose}
-            title="Security Alert"
-          />
-        </div>
-      </div>
-    );
-  }
+  // Show the dashboard and render any security alert as a popup/modal
 
   return (
     <div className="min-h-screen w-full h-full bg-black text-white">
@@ -166,6 +150,14 @@ export default function Dashboard() {
           onLogout={handleLogout}
         />
         <DashboardContent />
+        {securityError && (
+          <ErrorAlert
+            error={securityError}
+            isOpen={isSecurityAlertOpen}
+            onClose={handleSecurityAlertClose}
+            title="Security Alert"
+          />
+        )}
       </div>
     </div>
   );
