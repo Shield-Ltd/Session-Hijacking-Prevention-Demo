@@ -1,14 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import FingerprintJS from "@fingerprintjs/fingerprintjs";
+import { generateFingerprint } from 'anti-session-hijack';
 import Squares from "@/components/ui/Squares";
 import { LoadingScreen } from "./_components/LoadingScreen";
 import { DashboardHeader } from "./_components/DashboardHeader";
 import { DashboardContent } from "./_components/DashboardContent";
 import {toast} from "sonner";
-
-const fpPromise = FingerprintJS.load();
 
 type UserState = {
   email: string;
@@ -18,19 +16,27 @@ type UserState = {
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<UserState>(null);
+  const [visitorId, setVisitorId] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    verifySession();
+    const getFingerprint = async () => {
+      const result = await generateFingerprint();
+      setVisitorId(result.id);
+    };
+
+    getFingerprint();
   }, []);
+
+  useEffect(() => {
+    if (visitorId) {
+      verifySession();
+    }
+  }, [visitorId]);
 
   const verifySession = async () => {
     try {
       setLoading(true);
-
-      const fp = await fpPromise;
-      const result = await fp.get();
-      const visitorId = result.visitorId;
 
       const response = await fetch("/api/verify-session", {
         method: "POST",

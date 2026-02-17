@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Loader2, ArrowRight } from 'lucide-react';
@@ -8,13 +8,11 @@ import { Label } from "@/components/ui/label";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import GlassSurface from "@/components/ui/GlassSurface";
 import Squares from "@/components/ui/Squares";
-
-import FingerprintJS from "@fingerprintjs/fingerprintjs";
-
-const fpPromise = FingerprintJS.load();
+import { generateFingerprint } from 'anti-session-hijack';
 
 export default function LoginPage() {
   const router = useRouter();
+  const [visitorId, setVisitorId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -22,6 +20,15 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const getFingerprint = async () => {
+      const result = await generateFingerprint();
+      setVisitorId(result.id);
+    };
+
+    getFingerprint();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -43,11 +50,14 @@ export default function LoginPage() {
       return;
     }
 
-    try {
-      const fp = await fpPromise;
-      const result = await fp.get();
-      const visitorId = result.visitorId;
+    if (!visitorId) {
+      setError("Unable to generate device fingerprint");
+      setIsAlertOpen(true);
+      setIsLoading(false);
+      return;
+    }
 
+    try {
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: {
