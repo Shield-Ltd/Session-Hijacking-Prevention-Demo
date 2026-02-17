@@ -6,6 +6,7 @@ import Squares from "@/components/ui/Squares";
 import { LoadingScreen } from "./_components/LoadingScreen";
 import { DashboardHeader } from "./_components/DashboardHeader";
 import { DashboardContent } from "./_components/DashboardContent";
+import {toast} from "sonner";
 
 const fpPromise = FingerprintJS.load();
 
@@ -17,37 +18,29 @@ type UserState = {
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<UserState>(null);
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     verifySession();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const verifySession = async () => {
     try {
       setLoading(true);
 
-      // Get browser fingerprint
       const fp = await fpPromise;
       const result = await fp.get();
       const visitorId = result.visitorId;
 
-      // Call session verification API
       const response = await fetch("/api/verify-session", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fingerprint: visitorId }),
         credentials: "include",
       });
 
       const contentType = response.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
-        const text = await response.text();
-        console.error("Non-JSON response:", text);
         router.push("/login");
         return;
       }
@@ -56,25 +49,21 @@ export default function Dashboard() {
 
       if (!response.ok || !data.valid) {
         if (data.hijacked) {
-          setLoading(false);
-          alert(
-            "Security Alert: Session hijacking detected! You have been logged out for security reasons."
+          toast.error(
+            "Security Alert: Session hijacking detected! You have been logged out.",
+            {
+              duration: 5000,
+            }
           );
           document.cookie =
             "authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-
-          router.push("/login");
-          setTimeout(() => (window.location.href = "/login"), 150);
-          return;
         }
 
-        setLoading(false);
         router.push("/login");
-        setTimeout(() => (window.location.href = "/login"), 150);
+        setTimeout(() => (window.location.href = "/login"), 5000);
         return;
       }
 
-      // Session is valid — fetch full user details from /api/user
       try {
         const userResp = await fetch("/api/user", {
           method: "GET",
@@ -82,19 +71,13 @@ export default function Dashboard() {
         });
 
         if (!userResp.ok) {
-          console.error(
-            "Failed to fetch user details",
-            await userResp.text()
-          );
           router.push("/login");
           return;
         }
 
         const userData = await userResp.json();
-        // Expect { user: { id, name, email } }
         setUser({ email: userData.user.email, name: userData.user.name });
-      } catch (err) {
-        console.error("Error fetching user details:", err);
+      } catch {
         router.push("/login");
         return;
       } finally {
@@ -107,38 +90,16 @@ export default function Dashboard() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      const response = await fetch("/api/auth/logout", {
-        method: "POST",
-        credentials: "same-origin",
-      });
-
-      if (response.ok) {
-        window.location.href = "/login";
-      }
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
-  };
-
-  if (loading) {
-    return <LoadingScreen />;
-  }
+  if (loading) return <LoadingScreen />;
 
   return (
     <div className="min-h-screen w-full h-full bg-black text-white">
       <div className="absolute inset-0 z-0">
         <Squares />
       </div>
+
       <div className="relative z-10 flex flex-col min-h-screen">
-        <DashboardHeader
-          user={user}
-          showProfileMenu={showProfileMenu}
-          onToggleProfileMenu={() => setShowProfileMenu(!showProfileMenu)}
-          onCloseProfileMenu={() => setShowProfileMenu(false)}
-          onLogout={handleLogout}
-        />
+        <DashboardHeader user={user} />
         <DashboardContent />
       </div>
     </div>
