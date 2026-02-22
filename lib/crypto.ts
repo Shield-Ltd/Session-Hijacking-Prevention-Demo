@@ -19,11 +19,3 @@ export function hashToken(token: string): string {
 export function generateUUID(): string {
   return randomUUID();
 }
-
-// Generate random string for nonce
-export function generateNonce(): string {
-  return createHash('sha256')
-    .update(randomUUID() + Date.now().toString())
-    .digest('hex')
-    .substring(0, 32);
-}

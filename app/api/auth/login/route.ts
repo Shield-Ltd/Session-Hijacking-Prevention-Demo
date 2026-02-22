@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { redis } from "@/lib/redis";
-import * as jose from 'jose';
-import { verifyPassword, hashToken, generateUUID, generateNonce } from '@/lib/crypto';
+import { verifyPassword, hashToken } from "@/lib/crypto";
 
-import { addSession } from "anti-session-hijack";
+import { addSession, generateAuthToken } from "anti-session-hijack";
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,21 +11,18 @@ export async function POST(request: NextRequest) {
 
     // Validate input
     if (!email || !password) {
-      return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Email and password are required" },
+        { status: 400 }
+      );
     }
 
-    // Create options
-    const options = {
-      jwtSecret: process.env.JWT_SECRET || "your-secret-key",
-    };
-
-
     const users = await db`
-    SELECT id, name, email, password_hash FROM users WHERE email = ${email}
-  `;
+      SELECT id, name, email, password_hash FROM users WHERE email = ${email}
+    `;
 
     if (users.length === 0) {
-      throw new Error('Invalid email or password');
+      throw new Error("Invalid email or password");
     }
 
     const user = users[0];
@@ -34,50 +30,48 @@ export async function POST(request: NextRequest) {
     // Verify password
     const isPasswordValid = await verifyPassword(password, user.password_hash);
     if (!isPasswordValid) {
-      throw new Error('Invalid email or password');
+      throw new Error("Invalid email or password");
     }
 
-    // Generate JWT token
-    const secretKey = new TextEncoder().encode(options.jwtSecret);
-    const nonce = generateNonce();
 
-    const token = await new jose.SignJWT({
-      id: user.id,
-      email: user.email,
-      nonce,
-    })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setExpirationTime('7d')
-      .sign(secretKey);
+    // Generate JWT using npm package
+    const token = await generateAuthToken(
+      process.env.JWT_SECRET || "your-secret-key",
+      {
+        payload: {
+          id: user.id,
+          email: user.email,
+        },
+        expiresIn: "7d",
+      }
+    );
 
-    // Hash the token for storage
+    // Hash token for storage
     const authTokenHash = hashToken(token);
 
-    // Storing Session in Redis
+    // Store session in Redis
     await addSession(authTokenHash, fingerprint, redis);
 
-    const response = NextResponse.json({
-      message: "Login successful",
-    }, { status: 200 });
-
-    if (!response) {
-      console.error("Response not found");
-      return
-    }
+    const response = NextResponse.json(
+      { message: "Login successful" },
+      { status: 200 }
+    );
 
     // Set cookie
     response.cookies.set("authToken", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60, // 7 days
-      path: '/'
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60,
+      path: "/",
     });
 
     return response;
-
   } catch (error: any) {
     console.error("Login error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }
