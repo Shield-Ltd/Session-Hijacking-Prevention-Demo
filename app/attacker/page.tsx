@@ -88,7 +88,9 @@ export default function AttackerPage() {
                         <tr key={s.id} className="odd:bg-red-900/20 hover:bg-red-800/40">
                           <td className="py-2 px-3 text-sm align-top w-12">{idx + 1}</td>
                           <td className="py-2 px-3 text-sm align-top w-1/3 truncate" title={s.url || ''}>
-                            {s.url || '—'}
+                            <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-red-100 hover:underline truncate">
+                              {s.url || '—'}
+                            </a>
                           </td>
                           <td className="py-2 px-3 text-sm align-top w-1/3 truncate">
                             <button
@@ -102,10 +104,10 @@ export default function AttackerPage() {
                               <span className="ml-2 text-xs text-red-100">Copied</span>
                             )}
                           </td>
-                          <td className="py-2 px-3 text-sm align-top w-1/4 truncate">
+                          <td className="py-2 px-3 text-sm align-top w-1/3">
                             <button
                               onClick={() => handleCopy(s.session_id,  s.id, 'value')}
-                              className="text-red-100 hover:underline truncate"
+                              className="text-red-100 hover:underline break-all"
                               title={s.session_id || "—"}
                             >
                               {s.session_id || "—"}
